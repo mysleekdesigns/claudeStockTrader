@@ -10,7 +10,16 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 from sqlalchemy import StaticPool, event
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+# Register JSONB as JSON for SQLite type compiler (used in tests)
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
+
+if not hasattr(SQLiteTypeCompiler, "visit_JSONB"):
+    def _visit_jsonb(self, type_, **kw):
+        return "JSON"
+    SQLiteTypeCompiler.visit_JSONB = _visit_jsonb
 
 from backend.database.models import (
     Base,

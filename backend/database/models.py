@@ -153,6 +153,19 @@ class RiskState(Base):
     shutdown_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class CorrelationData(Base):
+    __tablename__ = "correlation_data"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    asset: Mapped[str] = mapped_column(String(20), nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_correlation_data_asset_ts", "asset", "timestamp"),
+    )
+
+
 class DecisionLog(Base):
     __tablename__ = "decision_log"
 
@@ -166,3 +179,20 @@ class DecisionLog(Base):
     )
 
     __table_args__ = (Index("ix_decision_log_created", "created_at"),)
+
+
+class ABTestRun(Base):
+    __tablename__ = "ab_test_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    variant_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    decision_cycle_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    signals_created: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    signals_won: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    signals_lost: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    win_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (Index("ix_ab_test_variant_cycle", "variant_name", "decision_cycle_id"),)

@@ -56,6 +56,39 @@ def bollinger_bands(
     return upper, middle, lower
 
 
+def adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """Average Directional Index — measures trend strength regardless of direction.
+
+    Expects DataFrame with 'high', 'low', 'close' columns.
+    Returns ADX series (0-100). Values >25 indicate trending, <20 indicate ranging.
+    """
+    high = df["high"]
+    low = df["low"]
+    prev_close = df["close"].shift(1)
+
+    # True Range
+    tr1 = high - low
+    tr2 = (high - prev_close).abs()
+    tr3 = (low - prev_close).abs()
+    true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+    # Directional Movement
+    up_move = high - high.shift(1)
+    down_move = low.shift(1) - low
+
+    plus_dm = pd.Series(np.where((up_move > down_move) & (up_move > 0), up_move, 0.0), index=df.index)
+    minus_dm = pd.Series(np.where((down_move > up_move) & (down_move > 0), down_move, 0.0), index=df.index)
+
+    # Smoothed averages
+    atr_smooth = true_range.ewm(span=period, adjust=False).mean()
+    plus_di = 100.0 * plus_dm.ewm(span=period, adjust=False).mean() / atr_smooth.replace(0, np.nan)
+    minus_di = 100.0 * minus_dm.ewm(span=period, adjust=False).mean() / atr_smooth.replace(0, np.nan)
+
+    # ADX = smoothed DX
+    dx = 100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+    return dx.ewm(span=period, adjust=False).mean()
+
+
 def detect_equal_levels(
     series: pd.Series, tolerance: float, lookback: int = 50, min_touches: int = 2
 ) -> list[float]:

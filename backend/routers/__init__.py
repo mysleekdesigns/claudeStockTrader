@@ -1,3 +1,4 @@
+from backend.routers.ab_tests import router as ab_tests_router
 from backend.routers.candles import router as candles_router
 from backend.routers.decisions import router as decisions_router
 from backend.routers.health import router as health_router
@@ -7,6 +8,7 @@ from backend.routers.signals import router as signals_router
 from backend.routers.websocket import router as websocket_router
 
 __all__ = [
+    "ab_tests_router",
     "candles_router",
     "signals_router",
     "performance_router",

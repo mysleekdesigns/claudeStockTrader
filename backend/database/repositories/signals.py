@@ -42,6 +42,16 @@ class SignalRepository:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
+    async def list_recent_resolved(self, limit: int = 50) -> list[Signal]:
+        query = (
+            select(Signal)
+            .where(Signal.status.in_([SignalStatus.WON, SignalStatus.LOST]))
+            .order_by(Signal.resolved_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
     async def resolve(
         self, signal_id: int, status: SignalStatus, pips_result: float
     ) -> None:

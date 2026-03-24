@@ -70,33 +70,65 @@ class ClaudeClient:
     async def _set_cached(self, prompt: str, response: str) -> None:
         await self._redis.set(self._cache_key(prompt), response, ex=CACHE_TTL)
 
-    async def _call(self, model: str, system: str, user_prompt: str, max_tokens: int = 2048) -> str:
-        """Core method: rate-limit, cache check, semaphore-guarded API call."""
+    async def _call(
+        self,
+        model: str,
+        system: str,
+        user_prompt: str,
+        max_tokens: int = 2048,
+        thinking: dict | None = None,
+    ) -> tuple[str, str | None]:
+        """Core method: rate-limit, cache check, semaphore-guarded API call.
+
+        Returns:
+            (response_text, thinking_text) — thinking_text is None when thinking is disabled.
+        """
         full_prompt = f"{system}\n---\n{user_prompt}"
 
         cached = await self._get_cached(full_prompt)
         if cached:
-            return cached
+            return cached, None
 
         await self._check_rate_limit()
 
         async with self._semaphore:
             logger.info("Calling Claude %s (prompt length: %d chars)", model, len(full_prompt))
-            response = await self._client.messages.create(
-                model=model,
-                max_tokens=max_tokens,
-                system=system,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            text = response.content[0].text
+            kwargs: dict = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "system": system,
+                "messages": [{"role": "user", "content": user_prompt}],
+            }
+            if thinking:
+                kwargs["thinking"] = thinking
+            response = await self._client.messages.create(**kwargs)
+
+            # Extract thinking and text blocks
+            thinking_text = None
+            text = ""
+            for block in response.content:
+                if block.type == "thinking":
+                    thinking_text = block.thinking
+                elif block.type == "text":
+                    text = block.text
 
         await self._set_cached(full_prompt, text)
-        return text
+        return text, thinking_text
 
     async def decide(self, system: str, user_prompt: str) -> str:
-        """Use claude-sonnet-4-6 for brain trading decisions."""
-        return await self._call(DECIDE_MODEL, system, user_prompt, max_tokens=4096)
+        """Use claude-sonnet-4-6 for brain trading decisions with extended thinking."""
+        text, thinking = await self._call(
+            DECIDE_MODEL, system, user_prompt, max_tokens=16000,
+            thinking={"type": "enabled", "budget_tokens": 8000},
+        )
+        self._last_thinking = thinking
+        return text
+
+    async def get_last_thinking(self) -> str | None:
+        """Return the thinking text from the most recent decide() call."""
+        return getattr(self, "_last_thinking", None)
 
     async def analyze(self, system: str, user_prompt: str) -> str:
         """Use claude-haiku-4-5 for Monte Carlo reasoning and analysis."""
-        return await self._call(ANALYZE_MODEL, system, user_prompt, max_tokens=2048)
+        text, _ = await self._call(ANALYZE_MODEL, system, user_prompt, max_tokens=2048)
+        return text

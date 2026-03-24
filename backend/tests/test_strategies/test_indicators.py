@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from backend.strategies.indicators import (
+    adx,
     atr,
     bollinger_bands,
     detect_equal_levels,
@@ -102,6 +103,52 @@ class TestBollingerBands:
         upper, _, lower = bollinger_bands(sample_df["close"])
         width = (upper - lower).dropna()
         assert (width >= 0).all()
+
+
+class TestADX:
+    def test_adx_range(self, sample_df):
+        result = adx(sample_df)
+        valid = result.dropna()
+        assert (valid >= 0).all()
+        assert (valid <= 100).all()
+
+    def test_adx_length(self, sample_df):
+        result = adx(sample_df, period=14)
+        assert len(result) == len(sample_df)
+
+    def test_adx_strong_trend(self):
+        """ADX should be high in a strong unidirectional trend."""
+        n = 100
+        closes = [2350 + i * 5.0 for i in range(n)]
+        highs = [c + 3.0 for c in closes]
+        lows = [c - 2.0 for c in closes]
+        df = pd.DataFrame({
+            "open": closes,
+            "high": highs,
+            "low": lows,
+            "close": closes,
+        })
+        result = adx(df, period=14)
+        # Strong trend should produce ADX > 25
+        assert result.iloc[-1] > 25
+
+    def test_adx_flat_market(self):
+        """ADX should be low in a flat/ranging market."""
+        n = 100
+        np.random.seed(123)
+        base = 2350.0
+        # oscillate around base with small amplitude
+        closes = [base + np.sin(i * 0.5) * 2.0 for i in range(n)]
+        highs = [c + 1.0 for c in closes]
+        lows = [c - 1.0 for c in closes]
+        df = pd.DataFrame({
+            "open": closes,
+            "high": highs,
+            "low": lows,
+            "close": closes,
+        })
+        result = adx(df, period=14)
+        assert result.iloc[-1] < 25
 
 
 class TestDetectEqualLevels:

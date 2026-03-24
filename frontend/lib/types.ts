@@ -92,6 +92,24 @@ export interface OptimisedParams {
   validated_at: string | null;
 }
 
+export interface ABVariantSummary {
+  variant_name: string;
+  total_cycles: number;
+  total_signals: number;
+  total_won: number;
+  total_lost: number;
+  win_rate: number;
+  is_significant: boolean;
+  p_value: number | null;
+}
+
+export interface ABTestResults {
+  variants: ABVariantSummary[];
+  significant: boolean;
+  p_value: number | null;
+  recommendation: string;
+}
+
 export interface HealthStatus {
   status: string;
   database: string;

@@ -115,6 +115,27 @@ async def reoptimise_params() -> None:
             logger.info("reoptimise_params: %d/%d strategies promoted", promoted, len(results))
 
 
+async def fetch_market_intel() -> None:
+    """Fetch and cache market sentiment headlines (every 30 min at :25)."""
+    import httpx
+    import redis.asyncio as aioredis
+
+    from backend.brain.market_intel import get_market_sentiment
+    from backend.config import settings as cfg
+
+    async with _log_job("fetch_market_intel"):
+        redis_client = aioredis.from_url(cfg.redis_url, decode_responses=True)
+        try:
+            async with httpx.AsyncClient() as http_client:
+                result = await get_market_sentiment(redis_client, http_client)
+            logger.info(
+                "fetch_market_intel: %s (score=%.3f, %d headlines)",
+                result.sentiment_label, result.score, len(result.headlines),
+            )
+        finally:
+            await redis_client.aclose()
+
+
 async def circuit_breaker_reset() -> None:
     """Check and reset circuit breaker if shutdown period expired (every 1 hour)."""
     async with _log_job("circuit_breaker_reset"):
@@ -137,6 +158,7 @@ def register_phase6_jobs(scheduler: AsyncIOScheduler) -> None:
 
     jobs_to_register = [
         (run_signals, "interval", {"minutes": 15}, "run_signals", 15),
+        (fetch_market_intel, "interval", {"minutes": 30}, "fetch_market_intel", 20),
         (decision_pipeline, "interval", {"minutes": 30}, "decision_pipeline", 25),
         (resolve_signals, "interval", {"minutes": 5}, "resolve_signals", 35),
         (monte_carlo_engine, "interval", {"hours": 4}, "monte_carlo_engine", 45),

@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     min_signal_confidence: float = 0.60
     consecutive_sl_limit: int = 8
 
+    # Brain / Ensemble
+    ensemble_enabled: bool = True
+
+    # A/B testing
+    ab_testing_enabled: bool = False
+    ab_variants: list[str] = ["baseline", "enhanced"]
+    ab_default_variant: str = "baseline"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 

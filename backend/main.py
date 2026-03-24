@@ -17,6 +17,7 @@ from backend.data.candle_ingestion import CandleIngestionService, register_inges
 from backend.data.feed import FailoverFeed, OandaFeed, TwelveDataFeed
 from backend.database.connection import async_engine, async_session_factory
 from backend.routers import (
+    ab_tests_router,
     candles_router,
     decisions_router,
     health_router,
@@ -102,4 +103,5 @@ app.include_router(signals_router)
 app.include_router(performance_router)
 app.include_router(risk_router)
 app.include_router(decisions_router)
+app.include_router(ab_tests_router)
 app.include_router(websocket_router)

@@ -1,4 +1,5 @@
 import type {
+  ABTestResults,
   BacktestRun,
   Candle,
   DecisionLog,
@@ -66,6 +67,10 @@ export async function getBacktests(limit = 50): Promise<BacktestRun[]> {
 
 export async function getActiveParams(): Promise<OptimisedParams[]> {
   return fetchJSON<OptimisedParams[]>(`${BASE}/api/params`);
+}
+
+export async function getABTestResults(): Promise<ABTestResults> {
+  return fetchJSON<ABTestResults>(`${BASE}/api/ab-tests`);
 }
 
 export async function getHealth(): Promise<HealthStatus> {

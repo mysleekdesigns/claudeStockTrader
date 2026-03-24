@@ -12,6 +12,7 @@ import { PnLChart } from "@/components/charts/pnl-chart";
 import { RiskPanel } from "@/components/brain/risk-panel";
 import { DecisionLogView } from "@/components/brain/decision-log";
 import { BacktestTable } from "@/components/brain/backtest-table";
+import { ABTestPanel } from "@/components/brain/ab-test-panel";
 import { ParamsViewer } from "@/components/brain/params-viewer";
 
 export default async function BrainPage() {
@@ -72,6 +73,7 @@ export default async function BrainPage() {
 
         <div className="space-y-4">
           <RiskPanel initialRisk={risk} />
+          <ABTestPanel />
           <DecisionLogView initialDecisions={decisions} />
         </div>
       </div>

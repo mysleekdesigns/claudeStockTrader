@@ -2,7 +2,7 @@
 
 Build a production-grade, AI-assisted gold (XAU/USD) trading system. The system generates trade signals via 4 strategies, uses Claude AI for decision-making, self-optimises via Monte Carlo simulation, and presents everything through a real-time dashboard.
 
-**Implementation Status: COMPLETE** — All 8 phases built and verified on 2026-03-24.
+**Implementation Status: Phases 1-8 COMPLETE** — Built and verified on 2026-03-24. Phases 9-12 (Enhanced Brain & Claude Code Integration) in progress.
 
 ---
 
@@ -473,6 +473,178 @@ Build a production-grade, AI-assisted gold (XAU/USD) trading system. The system 
   - [x] `tests/test_routers/test_signals.py` — 6 tests: list/resolve signals, already-resolved rejection
 
 **Total: 85+ tests across 11 test files**
+
+---
+
+## Phase 9: A/B Testing Framework
+
+### 9.1 Database & Config
+- [ ] Alembic migration: `ab_test_runs` table (id, variant_name, decision_cycle_id, signals_created, signals_won, signals_lost, win_rate, created_at)
+- [ ] `backend/config.py` — Add: `AB_TESTING_ENABLED`, `AB_VARIANTS` (list of variant names), `AB_DEFAULT_VARIANT`
+- [ ] `.env.example` — Add AB testing config vars
+
+### 9.2 A/B Testing Engine
+- [ ] `backend/brain/ab_testing.py` — ABTestManager class:
+  - [ ] `assign_variant()` — Random assignment per decision cycle
+  - [ ] `record_outcome()` — Track win/loss per variant
+  - [ ] `get_results()` — Statistical comparison (chi-squared test for significance)
+  - [ ] `get_variant_config()` — Return prompt/ensemble config for assigned variant
+- [ ] Wire into `decision_pipeline.py` — Each cycle records variant + outcomes
+
+### 9.3 API & Frontend
+- [ ] `backend/routers/ab_tests.py` — GET /api/ab-tests (results summary)
+- [ ] `frontend/components/brain/ab-test-panel.tsx` — A/B test results display on /brain page
+- [ ] Verification: run 2 variants for 50+ cycles, confirm statistical output
+
+---
+
+## Phase 10: Enhanced Brain Intelligence
+
+### 10.1 Market Regime Detector
+- [ ] `backend/strategies/indicators.py` — Add ADX (Average Directional Index) calculation
+- [ ] `backend/brain/market_regime.py` — MarketRegimeDetector class:
+  - [ ] Classify: Trending Up, Trending Down, Ranging, Volatile
+  - [ ] Uses existing EMA, ATR, Bollinger + new ADX from indicators.py
+  - [ ] Returns regime + confidence per timeframe (15m, 1h, 4h, 1d)
+  - [ ] Regime rules: ADX>25=trending, ADX<20+tight BB=ranging, ATR>2x avg=volatile
+
+### 10.2 Session-Aware Trading Filter
+- [ ] `backend/brain/session_filter.py` — SessionFilter class:
+  - [ ] Asian (00:00-08:00 UTC): Low vol, ranging — favor breakout_expansion
+  - [ ] London (08:00-16:00 UTC): High vol, trends — favor trend_continuation, liquidity_sweep
+  - [ ] New York (13:00-21:00 UTC): Highest vol, reversals — all strategies active
+  - [ ] Off-hours (21:00-00:00 UTC): Low liquidity — reduce position_size_multiplier to 0.5
+  - [ ] Returns current session + recommended strategy weights
+
+### 10.3 Decision Feedback Loop
+- [ ] `backend/brain/decision_pipeline.py` — Add `_load_recent_decisions()`:
+  - [ ] Query last 10 decision logs from `decision_log` table
+  - [ ] Join with resolved signals to compute win/loss per decision
+  - [ ] Format as "## Recent Decision Outcomes" section in user prompt
+  - [ ] Example: "Decision #42: activated [liquidity_sweep, ema_momentum] -> 3W 1L (75%)"
+
+### 10.4 Extended Thinking for Brain Decisions
+- [ ] `backend/brain/claude_client.py` — Modify `decide()` method:
+  - [ ] Add `thinking={"type": "enabled", "budget_tokens": 8000}` parameter
+  - [ ] Parse thinking blocks from response for logging
+  - [ ] Store thinking text in decision log for debugging
+- [ ] `DECISION_SYSTEM_PROMPT` — Enriched with regime, session, feedback context + per-regime guidance
+
+### 10.5 Multi-Perspective Ensemble (Enabled by Default)
+- [ ] `backend/brain/ensemble.py` — EnsembleDecisionMaker class:
+  - [ ] 3 parallel async Claude calls via `asyncio.gather()`:
+    - [ ] Conservative Analyst: capital preservation, tighter stops, lower size
+    - [ ] Momentum Trader: trend strength, wider trailing stops
+    - [ ] Contrarian Analyst: exhaustion, mean reversion setups
+  - [ ] Aggregation: strategy activated if 2/3 agree (majority vote)
+  - [ ] Position size: weighted average (conservative gets 1.5x weight)
+  - [ ] All 3 disagree on a strategy -> suppress (uncertainty = caution)
+  - [ ] Each analyst's reasoning logged to decision_log
+- [ ] `backend/config.py` — Add `ENSEMBLE_ENABLED=true` (toggleable)
+- [ ] `backend/brain/decision_pipeline.py` — Route through ensemble when enabled
+- [ ] API usage: 3 calls/30min = 6/hr (within 60/hr limit)
+
+### 10.6 Verification
+- [ ] Unit tests for market_regime, session_filter, ensemble
+- [ ] Integration test: decision pipeline produces enriched prompt with all new sections
+- [ ] A/B test: run baseline vs enhanced for statistical comparison
+
+---
+
+## Phase 11: Market Intelligence & Correlations
+
+### 11.1 News Sentiment Pipeline (CrawlForge)
+- [ ] `backend/brain/market_intel.py` — MarketIntelligence class:
+  - [ ] `fetch_headlines()` — CrawlForge `search_web` query: "gold XAU price news today", top 5
+  - [ ] `score_sentiment()` — Keyword scorer (bullish/bearish word lists), normalized -1.0 to +1.0
+  - [ ] Redis cache with 25-min TTL (matches Claude cache)
+  - [ ] Returns: sentiment_label (bullish/bearish/neutral), score, top headlines
+- [ ] APScheduler job `fetch_market_intel` — runs at minute :25 (5 min before decision pipeline)
+- [ ] Feed as "## Market Sentiment" section in brain prompt
+
+### 11.2 Cross-Asset Correlation Module
+- [ ] Alembic migration: `correlation_data` table (id, asset, price, timestamp)
+- [ ] `backend/brain/correlations.py` — CorrelationAnalyzer class:
+  - [ ] Fetch DXY, US10Y via OANDA or CrawlForge (1h snapshots)
+  - [ ] Rolling 20-period correlation coefficients vs gold
+  - [ ] Directional signals: DXY falling + yields falling = gold bullish
+  - [ ] Include correlation summary in brain prompt
+
+### 11.3 Enhanced Confidence Scoring
+- [ ] `backend/strategies/base.py` — Extend SignalCandidate or add post-processing:
+  - [ ] Regime alignment bonus (+0.10): signal direction matches detected regime
+  - [ ] Session bonus (+0.05): strategy historically strong in current session
+  - [ ] Correlation confirmation (+0.10): cross-asset data confirms direction
+  - [ ] Feedback bonus (+0.05): strategy winning recently (last 10 signals >60% WR)
+- [ ] Update all 4 strategy files to apply enhanced scoring
+- [ ] Higher effective quality bar -> filters more losing trades
+
+### 11.4 Verification
+- [ ] Unit tests for market_intel, correlations, enhanced confidence
+- [ ] End-to-end: start system, verify sentiment appears in decision logs
+- [ ] Monte Carlo comparison: before vs after enhanced confidence filtering
+
+---
+
+## Phase 12: Claude Code Agent Integration
+
+### 12.1 Trading Brain Researcher Agent
+- [ ] `.claude/agents/trading-brain-researcher.md` — Created via `/agent-creation`:
+  - [ ] Deep research using CrawlForge MCP tools
+  - [ ] Analyzes trading performance data from DB
+  - [ ] Proposes code improvements to strategies and brain
+  - [ ] Triggered: before major changes, after losses, weekly review
+
+### 12.2 Performance Reviewer Agent
+- [ ] `.claude/agents/performance-reviewer.md` — Scheduled daily at 00:00 UTC:
+  - [ ] Reads last 24h signals + outcomes from DB
+  - [ ] Calculates win rate, avg RR, Sharpe by strategy
+  - [ ] Compares against 7-day and 30-day rolling averages
+  - [ ] Flags strategies with >10pp win rate drop
+  - [ ] Writes analysis to `backend/reports/daily_review.md`
+
+### 12.3 Strategy Evolver Agent
+- [ ] `.claude/agents/strategy-evolver.md` — Scheduled weekly (Sunday 00:00 UTC):
+  - [ ] Reads all losing signals from past week
+  - [ ] Identifies loss patterns (session, regime, strategy correlations)
+  - [ ] Proposes concrete code changes with reasoning
+  - [ ] Can be triggered on-demand via Claude Code CLI
+
+### 12.4 Verification
+- [ ] Run each agent manually, verify output quality
+- [ ] Schedule agents via `/schedule`, confirm cron execution
+- [ ] Verify performance-reviewer catches intentional strategy degradation
+
+---
+
+## Updated File Tree (Phase 9-12 additions)
+
+```
+backend/brain/
+├── ab_testing.py          # NEW: A/B testing framework
+├── market_regime.py       # NEW: Market regime classification
+├── session_filter.py      # NEW: Trading session awareness
+├── ensemble.py            # NEW: Multi-perspective ensemble
+├── market_intel.py        # NEW: CrawlForge news sentiment
+├── correlations.py        # NEW: Cross-asset correlation analysis
+├── claude_client.py       # MODIFIED: extended thinking support
+├── decision_pipeline.py   # MODIFIED: enriched context + ensemble routing
+└── risk_manager.py        # unchanged
+
+backend/routers/
+└── ab_tests.py            # NEW: A/B test results API
+
+backend/reports/           # NEW directory
+└── daily_review.md        # Auto-generated by performance-reviewer agent
+
+.claude/agents/
+├── trading-brain-researcher.md  # NEW
+├── performance-reviewer.md      # NEW
+└── strategy-evolver.md          # NEW
+
+frontend/components/brain/
+└── ab-test-panel.tsx      # NEW: A/B test results display
+```
 
 ---
 
