@@ -1,1 +1,2 @@
 # claudeStockTrader
+# claudeStockTrader
