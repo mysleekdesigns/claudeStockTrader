@@ -20,26 +20,27 @@ function toChartData(candle: Candle): CandlestickData<Time> {
 }
 
 interface LiveChartProps {
-  initialCandles: Candle[];
+  initialCandlesByTf: Record<Timeframe, Candle[]>;
   initialSignals: Signal[];
 }
 
-export function LiveChart({ initialCandles, initialSignals }: LiveChartProps) {
+export function LiveChart({ initialCandlesByTf, initialSignals }: LiveChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [activeTimeframe, setActiveTimeframe] = useState<Timeframe>("1h");
-  const [candles, setCandles] = useState<Candle[]>(initialCandles);
+  const [candlesByTf, setCandlesByTf] = useState<Record<Timeframe, Candle[]>>(initialCandlesByTf);
   const [signals, setSignals] = useState<Signal[]>(initialSignals);
 
   const handleMessage = useCallback((msg: WSMessage) => {
     if (msg.type === "candle") {
       const candle = msg.data as Candle;
-      if (candle.timeframe === activeTimeframe) {
-        setCandles((prev) => [...prev, candle]);
-        if (seriesRef.current) {
-          seriesRef.current.update(toChartData(candle));
-        }
+      setCandlesByTf((prev) => ({
+        ...prev,
+        [candle.timeframe]: [...(prev[candle.timeframe as Timeframe] ?? []), candle],
+      }));
+      if (candle.timeframe === activeTimeframe && seriesRef.current) {
+        seriesRef.current.update(toChartData(candle));
       }
     } else if (msg.type === "signal") {
       setSignals((prev) => [msg.data as Signal, ...prev]);
@@ -87,8 +88,7 @@ export function LiveChart({ initialCandles, initialSignals }: LiveChartProps) {
       wickDownColor: "#ef4444",
     });
 
-    const filteredCandles = candles.filter((c) => c.timeframe === activeTimeframe);
-    const chartData = filteredCandles
+    const chartData = (candlesByTf[activeTimeframe] ?? [])
       .map(toChartData)
       .sort((a, b) => (a.time as number) - (b.time as number));
     series.setData(chartData);
@@ -139,7 +139,7 @@ export function LiveChart({ initialCandles, initialSignals }: LiveChartProps) {
       chartRef.current = null;
       seriesRef.current = null;
     };
-  }, [activeTimeframe, candles, signals]);
+  }, [activeTimeframe, candlesByTf, signals]);
 
   return (
     <div className="flex h-full flex-col">

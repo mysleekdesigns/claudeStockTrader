@@ -29,13 +29,24 @@ class RateLimitExceeded(Exception):
     pass
 
 
+class ClaudeClientDisabled(Exception):
+    """Raised when Claude client is called but no API key is configured."""
+    pass
+
+
 class ClaudeClient:
     """Async Claude client with semaphore, Redis prompt cache, and sliding window rate limiter."""
 
     def __init__(self, redis: aioredis.Redis) -> None:
-        self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         self._redis = redis
         self._semaphore = asyncio.Semaphore(3)
+        self._enabled = bool(settings.anthropic_api_key)
+        if self._enabled:
+            self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+            logger.info("Claude client initialized with API key")
+        else:
+            self._client = None
+            logger.warning("Claude client disabled: no ANTHROPIC_API_KEY configured")
 
     async def _check_rate_limit(self) -> None:
         """Enforce sliding window rate limit: 60 calls per hour via Redis."""
@@ -83,6 +94,9 @@ class ClaudeClient:
         Returns:
             (response_text, thinking_text) — thinking_text is None when thinking is disabled.
         """
+        if not self._enabled:
+            raise ClaudeClientDisabled("No ANTHROPIC_API_KEY configured")
+
         full_prompt = f"{system}\n---\n{user_prompt}"
 
         cached = await self._get_cached(full_prompt)

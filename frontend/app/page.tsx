@@ -36,7 +36,7 @@ export default async function HomePage() {
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_380px]">
       <div className="space-y-4">
         <div className="rounded-lg border border-border bg-surface">
-          <LiveChart initialCandles={candlesByTf["1h"]} initialSignals={signals} />
+          <LiveChart initialCandlesByTf={candlesByTf} initialSignals={signals} />
         </div>
         <TimeframePanel candlesByTf={candlesByTf} signals={signals} />
       </div>

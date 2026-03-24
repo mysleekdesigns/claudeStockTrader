@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import httpx
 from backend.brain.ab_testing import ABTestManager
-from backend.brain.claude_client import ClaudeClient, RateLimitExceeded
+from backend.brain.claude_client import ClaudeClient, ClaudeClientDisabled, RateLimitExceeded
 from backend.brain.correlations import CorrelationAnalyzer
 from backend.brain.ensemble import EnsembleDecisionMaker
 from backend.brain.market_intel import get_market_sentiment
@@ -323,6 +323,10 @@ Decide which strategies to activate for the next 30 minutes."""
                 suppressed_names = decision.get("suppressed_strategies", [])
                 position_size_multiplier = max(0.25, min(1.0, decision.get("position_size_multiplier", 1.0)))
                 claude_reasoning = decision.get("reasoning", "")
+        except ClaudeClientDisabled:
+            logger.info("Claude client disabled (no API key), using all strategies as fallback")
+            activated_names = [s.name for s in ALL_STRATEGIES]
+            claude_reasoning = "No Claude API key -- rule-based fallback to all strategies"
         except RateLimitExceeded:
             logger.warning("Claude rate limit exceeded, using all strategies as fallback")
             activated_names = [s.name for s in ALL_STRATEGIES]
