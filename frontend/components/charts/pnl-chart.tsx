@@ -44,12 +44,19 @@ export function PnLChart({ data }: PnLChartProps) {
       lineWidth: 2,
     });
 
-    series.setData(
-      data.map((p) => ({
-        time: (new Date(p.timestamp).getTime() / 1000) as Time,
-        value: p.cumulative_pnl,
-      })),
-    );
+    // Deduplicate by time (keep last value per timestamp) and sort ascending
+    const byTime = new Map<number, number>();
+    for (const p of data) {
+      const t = Math.floor(new Date(p.timestamp).getTime() / 1000);
+      byTime.set(t, p.cumulative_pnl);
+    }
+    const sorted = Array.from(byTime.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([t, v]) => ({ time: t as Time, value: v }));
+
+    if (sorted.length > 0) {
+      series.setData(sorted);
+    }
 
     chart.timeScale().fitContent();
 

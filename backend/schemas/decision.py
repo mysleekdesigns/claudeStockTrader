@@ -8,7 +8,7 @@ from backend.database.models import BacktestResult, BacktestRunType
 
 class DecisionLogResponse(BaseModel):
     id: int
-    ranked_strategies: dict[str, Any]
+    ranked_strategies: dict[str, Any] | list[Any]
     risk_status: str
     position_size_multiplier: float
     notes: str | None

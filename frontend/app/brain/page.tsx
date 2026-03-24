@@ -23,18 +23,14 @@ export default async function BrainPage() {
   let backtests = [];
   let params = [];
 
-  try {
-    [strategies, pnlData, risk, decisions, backtests, params] = await Promise.all([
-      getStrategyPerformance(),
-      getPnLHistory(),
-      getRiskState().catch(() => null),
-      getDecisions(),
-      getBacktests(),
-      getActiveParams(),
-    ]);
-  } catch {
-    // Backend may not be running
-  }
+  [strategies, pnlData, risk, decisions, backtests, params] = await Promise.all([
+    getStrategyPerformance().catch((e) => { console.error("Failed to fetch strategy performance:", e.message); return []; }),
+    getPnLHistory().catch((e) => { console.error("Failed to fetch PnL history:", e.message); return []; }),
+    getRiskState().catch((e) => { console.error("Failed to fetch risk state:", e.message); return null; }),
+    getDecisions().catch((e) => { console.error("Failed to fetch decisions:", e.message); return []; }),
+    getBacktests().catch((e) => { console.error("Failed to fetch backtests:", e.message); return []; }),
+    getActiveParams().catch((e) => { console.error("Failed to fetch active params:", e.message); return []; }),
+  ]);
 
   return (
     <div className="space-y-6">
