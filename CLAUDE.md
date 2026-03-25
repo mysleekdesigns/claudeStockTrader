@@ -91,7 +91,7 @@ cd frontend && npm install              # Install frontend deps
 
 ## Agent Team
 
-9 specialized agents in `.claude/agents/` for team-based builds. Spawn the `project-coordinator` to orchestrate a full build with `TeamCreate`.
+15 specialized agents in `.claude/agents/` for team-based builds. Spawn the `project-coordinator` to orchestrate a full build with `TeamCreate`.
 
 | Agent | Phase | Domain |
 |---|---|---|
@@ -104,6 +104,12 @@ cd frontend && npm install              # Install frontend deps
 | `api-websocket-developer` | 6 | REST routes, WebSocket, scheduler wiring |
 | `frontend-dashboard-developer` | 7 | Next.js dashboard, charts, components |
 | `test-quality-engineer` | 8 | Tests, error handling, logging |
+| `trading-brain-researcher` | 12 | CrawlForge research, performance analysis (Opus) |
+| `performance-reviewer` | 12 | Daily performance review, degradation alerts |
+| `strategy-evolver` | 12 | Weekly loss analysis, strategy code proposals |
+| `bollinger-band-strategist` | 13 | 5th strategy: BB + ATR mean-reversion/breakout |
+| `dynamic-stoploss-engineer` | 13 | ATR-based dynamic stop-loss, session-aware sizing |
+| `timeframe-analyzer` | 13 | M30 timeframe support, cross-TF benchmarking |
 
 ## Environment
 

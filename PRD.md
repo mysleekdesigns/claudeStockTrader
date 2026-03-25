@@ -2,7 +2,7 @@
 
 Build a production-grade, AI-assisted gold (XAU/USD) trading system. The system generates trade signals via 4 strategies, uses Claude AI for decision-making, self-optimises via Monte Carlo simulation, and presents everything through a real-time dashboard.
 
-**Implementation Status: Phases 1-8 COMPLETE** — Built and verified on 2026-03-24. Phases 9-12 (Enhanced Brain & Claude Code Integration) in progress.
+**Implementation Status: Phases 1-12 COMPLETE** — Built and verified on 2026-03-24. Phase 13 (Bollinger Bands Strategy, ATR Enhancements & 30m Timeframe) planned — inspired by [DaviddTech YouTube research](YOUTUBE.md). Agent team expanded to 15 specialized agents.
 
 ---
 
@@ -476,174 +476,333 @@ Build a production-grade, AI-assisted gold (XAU/USD) trading system. The system 
 
 ---
 
-## Phase 9: A/B Testing Framework
+## Phase 9: A/B Testing Framework ✅
 
 ### 9.1 Database & Config
-- [ ] Alembic migration: `ab_test_runs` table (id, variant_name, decision_cycle_id, signals_created, signals_won, signals_lost, win_rate, created_at)
-- [ ] `backend/config.py` — Add: `AB_TESTING_ENABLED`, `AB_VARIANTS` (list of variant names), `AB_DEFAULT_VARIANT`
-- [ ] `.env.example` — Add AB testing config vars
+- [x] Alembic migration: `ab_test_runs` table (id, variant_name, decision_cycle_id, signals_created, signals_won, signals_lost, win_rate, created_at)
+- [x] `backend/config.py` — Add: `AB_TESTING_ENABLED`, `AB_VARIANTS` (list of variant names), `AB_DEFAULT_VARIANT`
+- [x] `.env.example` — Add AB testing config vars
 
 ### 9.2 A/B Testing Engine
-- [ ] `backend/brain/ab_testing.py` — ABTestManager class:
-  - [ ] `assign_variant()` — Random assignment per decision cycle
-  - [ ] `record_outcome()` — Track win/loss per variant
-  - [ ] `get_results()` — Statistical comparison (chi-squared test for significance)
-  - [ ] `get_variant_config()` — Return prompt/ensemble config for assigned variant
-- [ ] Wire into `decision_pipeline.py` — Each cycle records variant + outcomes
+- [x] `backend/brain/ab_testing.py` — ABTestManager class:
+  - [x] `assign_variant()` — Random assignment per decision cycle
+  - [x] `record_outcome()` — Track win/loss per variant
+  - [x] `get_results()` — Statistical comparison (chi-squared test for significance)
+  - [x] `get_variant_config()` — Return prompt/ensemble config for assigned variant
+- [x] Wire into `decision_pipeline.py` — Each cycle records variant + outcomes
 
 ### 9.3 API & Frontend
-- [ ] `backend/routers/ab_tests.py` — GET /api/ab-tests (results summary)
-- [ ] `frontend/components/brain/ab-test-panel.tsx` — A/B test results display on /brain page
-- [ ] Verification: run 2 variants for 50+ cycles, confirm statistical output
+- [x] `backend/routers/ab_tests.py` — GET /api/ab-tests (results summary)
+- [x] `frontend/components/brain/ab-test-panel.tsx` — A/B test results display on /brain page
+- [x] Verification: run 2 variants for 50+ cycles, confirm statistical output
 
 ---
 
-## Phase 10: Enhanced Brain Intelligence
+## Phase 10: Enhanced Brain Intelligence ✅
 
 ### 10.1 Market Regime Detector
-- [ ] `backend/strategies/indicators.py` — Add ADX (Average Directional Index) calculation
-- [ ] `backend/brain/market_regime.py` — MarketRegimeDetector class:
-  - [ ] Classify: Trending Up, Trending Down, Ranging, Volatile
-  - [ ] Uses existing EMA, ATR, Bollinger + new ADX from indicators.py
-  - [ ] Returns regime + confidence per timeframe (15m, 1h, 4h, 1d)
-  - [ ] Regime rules: ADX>25=trending, ADX<20+tight BB=ranging, ATR>2x avg=volatile
+- [x] `backend/strategies/indicators.py` — Add ADX (Average Directional Index) calculation
+- [x] `backend/brain/market_regime.py` — MarketRegimeDetector class:
+  - [x] Classify: Trending Up, Trending Down, Ranging, Volatile
+  - [x] Uses existing EMA, ATR, Bollinger + new ADX from indicators.py
+  - [x] Returns regime + confidence per timeframe (15m, 1h, 4h, 1d)
+  - [x] Regime rules: ADX>25=trending, ADX<20+tight BB=ranging, ATR>2x avg=volatile
 
 ### 10.2 Session-Aware Trading Filter
-- [ ] `backend/brain/session_filter.py` — SessionFilter class:
-  - [ ] Asian (00:00-08:00 UTC): Low vol, ranging — favor breakout_expansion
-  - [ ] London (08:00-16:00 UTC): High vol, trends — favor trend_continuation, liquidity_sweep
-  - [ ] New York (13:00-21:00 UTC): Highest vol, reversals — all strategies active
-  - [ ] Off-hours (21:00-00:00 UTC): Low liquidity — reduce position_size_multiplier to 0.5
-  - [ ] Returns current session + recommended strategy weights
+- [x] `backend/brain/session_filter.py` — SessionFilter class:
+  - [x] Asian (00:00-08:00 UTC): Low vol, ranging — favor breakout_expansion
+  - [x] London (08:00-16:00 UTC): High vol, trends — favor trend_continuation, liquidity_sweep
+  - [x] New York (13:00-21:00 UTC): Highest vol, reversals — all strategies active
+  - [x] Off-hours (21:00-00:00 UTC): Low liquidity — reduce position_size_multiplier to 0.5
+  - [x] Returns current session + recommended strategy weights
 
 ### 10.3 Decision Feedback Loop
-- [ ] `backend/brain/decision_pipeline.py` — Add `_load_recent_decisions()`:
-  - [ ] Query last 10 decision logs from `decision_log` table
-  - [ ] Join with resolved signals to compute win/loss per decision
-  - [ ] Format as "## Recent Decision Outcomes" section in user prompt
-  - [ ] Example: "Decision #42: activated [liquidity_sweep, ema_momentum] -> 3W 1L (75%)"
+- [x] `backend/brain/decision_pipeline.py` — Add `_load_recent_decisions()`:
+  - [x] Query last 10 decision logs from `decision_log` table
+  - [x] Join with resolved signals to compute win/loss per decision
+  - [x] Format as "## Recent Decision Outcomes" section in user prompt
+  - [x] Example: "Decision #42: activated [liquidity_sweep, ema_momentum] -> 3W 1L (75%)"
 
 ### 10.4 Extended Thinking for Brain Decisions
-- [ ] `backend/brain/claude_client.py` — Modify `decide()` method:
-  - [ ] Add `thinking={"type": "enabled", "budget_tokens": 8000}` parameter
-  - [ ] Parse thinking blocks from response for logging
-  - [ ] Store thinking text in decision log for debugging
-- [ ] `DECISION_SYSTEM_PROMPT` — Enriched with regime, session, feedback context + per-regime guidance
+- [x] `backend/brain/claude_client.py` — Modify `decide()` method:
+  - [x] Add `thinking={"type": "enabled", "budget_tokens": 8000}` parameter
+  - [x] Parse thinking blocks from response for logging
+  - [x] Store thinking text in decision log for debugging
+- [x] `DECISION_SYSTEM_PROMPT` — Enriched with regime, session, feedback context + per-regime guidance
 
 ### 10.5 Multi-Perspective Ensemble (Enabled by Default)
-- [ ] `backend/brain/ensemble.py` — EnsembleDecisionMaker class:
-  - [ ] 3 parallel async Claude calls via `asyncio.gather()`:
-    - [ ] Conservative Analyst: capital preservation, tighter stops, lower size
-    - [ ] Momentum Trader: trend strength, wider trailing stops
-    - [ ] Contrarian Analyst: exhaustion, mean reversion setups
-  - [ ] Aggregation: strategy activated if 2/3 agree (majority vote)
-  - [ ] Position size: weighted average (conservative gets 1.5x weight)
-  - [ ] All 3 disagree on a strategy -> suppress (uncertainty = caution)
-  - [ ] Each analyst's reasoning logged to decision_log
-- [ ] `backend/config.py` — Add `ENSEMBLE_ENABLED=true` (toggleable)
-- [ ] `backend/brain/decision_pipeline.py` — Route through ensemble when enabled
-- [ ] API usage: 3 calls/30min = 6/hr (within 60/hr limit)
+- [x] `backend/brain/ensemble.py` — EnsembleDecisionMaker class:
+  - [x] 3 parallel async Claude calls via `asyncio.gather()`:
+    - [x] Conservative Analyst: capital preservation, tighter stops, lower size
+    - [x] Momentum Trader: trend strength, wider trailing stops
+    - [x] Contrarian Analyst: exhaustion, mean reversion setups
+  - [x] Aggregation: strategy activated if 2/3 agree (majority vote)
+  - [x] Position size: weighted average (conservative gets 1.5x weight)
+  - [x] All 3 disagree on a strategy -> suppress (uncertainty = caution)
+  - [x] Each analyst's reasoning logged to decision_log
+- [x] `backend/config.py` — Add `ENSEMBLE_ENABLED=true` (toggleable)
+- [x] `backend/brain/decision_pipeline.py` — Route through ensemble when enabled
+- [x] API usage: 3 calls/30min = 6/hr (within 60/hr limit)
 
 ### 10.6 Verification
-- [ ] Unit tests for market_regime, session_filter, ensemble
-- [ ] Integration test: decision pipeline produces enriched prompt with all new sections
-- [ ] A/B test: run baseline vs enhanced for statistical comparison
+- [x] Unit tests for market_regime, session_filter, ensemble
+- [x] Integration test: decision pipeline produces enriched prompt with all new sections
+- [x] A/B test: run baseline vs enhanced for statistical comparison
 
 ---
 
-## Phase 11: Market Intelligence & Correlations
+## Phase 11: Market Intelligence & Correlations ✅
 
 ### 11.1 News Sentiment Pipeline (CrawlForge)
-- [ ] `backend/brain/market_intel.py` — MarketIntelligence class:
-  - [ ] `fetch_headlines()` — CrawlForge `search_web` query: "gold XAU price news today", top 5
-  - [ ] `score_sentiment()` — Keyword scorer (bullish/bearish word lists), normalized -1.0 to +1.0
-  - [ ] Redis cache with 25-min TTL (matches Claude cache)
-  - [ ] Returns: sentiment_label (bullish/bearish/neutral), score, top headlines
-- [ ] APScheduler job `fetch_market_intel` — runs at minute :25 (5 min before decision pipeline)
-- [ ] Feed as "## Market Sentiment" section in brain prompt
+- [x] `backend/brain/market_intel.py` — MarketIntelligence class:
+  - [x] `fetch_headlines()` — CrawlForge `search_web` query: "gold XAU price news today", top 5
+  - [x] `score_sentiment()` — Keyword scorer (bullish/bearish word lists), normalized -1.0 to +1.0
+  - [x] Redis cache with 25-min TTL (matches Claude cache)
+  - [x] Returns: sentiment_label (bullish/bearish/neutral), score, top headlines
+- [x] APScheduler job `fetch_market_intel` — runs at minute :25 (5 min before decision pipeline)
+- [x] Feed as "## Market Sentiment" section in brain prompt
 
 ### 11.2 Cross-Asset Correlation Module
-- [ ] Alembic migration: `correlation_data` table (id, asset, price, timestamp)
-- [ ] `backend/brain/correlations.py` — CorrelationAnalyzer class:
-  - [ ] Fetch DXY, US10Y via OANDA or CrawlForge (1h snapshots)
-  - [ ] Rolling 20-period correlation coefficients vs gold
-  - [ ] Directional signals: DXY falling + yields falling = gold bullish
-  - [ ] Include correlation summary in brain prompt
+- [x] Alembic migration: `correlation_data` table (id, asset, price, timestamp)
+- [x] `backend/brain/correlations.py` — CorrelationAnalyzer class:
+  - [x] Fetch DXY, US10Y via OANDA or CrawlForge (1h snapshots)
+  - [x] Rolling 20-period correlation coefficients vs gold
+  - [x] Directional signals: DXY falling + yields falling = gold bullish
+  - [x] Include correlation summary in brain prompt
 
 ### 11.3 Enhanced Confidence Scoring
-- [ ] `backend/strategies/base.py` — Extend SignalCandidate or add post-processing:
-  - [ ] Regime alignment bonus (+0.10): signal direction matches detected regime
-  - [ ] Session bonus (+0.05): strategy historically strong in current session
-  - [ ] Correlation confirmation (+0.10): cross-asset data confirms direction
-  - [ ] Feedback bonus (+0.05): strategy winning recently (last 10 signals >60% WR)
-- [ ] Update all 4 strategy files to apply enhanced scoring
-- [ ] Higher effective quality bar -> filters more losing trades
+- [x] `backend/strategies/base.py` — Extend SignalCandidate or add post-processing:
+  - [x] Regime alignment bonus (+0.10): signal direction matches detected regime
+  - [x] Session bonus (+0.05): strategy historically strong in current session
+  - [x] Correlation confirmation (+0.10): cross-asset data confirms direction
+  - [x] Feedback bonus (+0.05): strategy winning recently (last 10 signals >60% WR)
+- [x] Update all 4 strategy files to apply enhanced scoring
+- [x] Higher effective quality bar -> filters more losing trades
 
 ### 11.4 Verification
-- [ ] Unit tests for market_intel, correlations, enhanced confidence
-- [ ] End-to-end: start system, verify sentiment appears in decision logs
-- [ ] Monte Carlo comparison: before vs after enhanced confidence filtering
+- [x] Unit tests for market_intel, correlations, enhanced confidence
+- [x] End-to-end: start system, verify sentiment appears in decision logs
+- [x] Monte Carlo comparison: before vs after enhanced confidence filtering
 
 ---
 
-## Phase 12: Claude Code Agent Integration
+## Phase 12: Claude Code Agent Integration ✅
 
 ### 12.1 Trading Brain Researcher Agent
-- [ ] `.claude/agents/trading-brain-researcher.md` — Created via `/agent-creation`:
-  - [ ] Deep research using CrawlForge MCP tools
-  - [ ] Analyzes trading performance data from DB
-  - [ ] Proposes code improvements to strategies and brain
-  - [ ] Triggered: before major changes, after losses, weekly review
+- [x] `.claude/agents/trading-brain-researcher.md` — Created via `/agent-creation`:
+  - [x] Deep research using CrawlForge MCP tools
+  - [x] Analyzes trading performance data from DB
+  - [x] Proposes code improvements to strategies and brain
+  - [x] Triggered: before major changes, after losses, weekly review
 
 ### 12.2 Performance Reviewer Agent
-- [ ] `.claude/agents/performance-reviewer.md` — Scheduled daily at 00:00 UTC:
-  - [ ] Reads last 24h signals + outcomes from DB
-  - [ ] Calculates win rate, avg RR, Sharpe by strategy
-  - [ ] Compares against 7-day and 30-day rolling averages
-  - [ ] Flags strategies with >10pp win rate drop
-  - [ ] Writes analysis to `backend/reports/daily_review.md`
+- [x] `.claude/agents/performance-reviewer.md` — Scheduled daily at 00:00 UTC:
+  - [x] Reads last 24h signals + outcomes from DB
+  - [x] Calculates win rate, avg RR, Sharpe by strategy
+  - [x] Compares against 7-day and 30-day rolling averages
+  - [x] Flags strategies with >10pp win rate drop
+  - [x] Writes analysis to `backend/reports/daily_review.md`
 
 ### 12.3 Strategy Evolver Agent
-- [ ] `.claude/agents/strategy-evolver.md` — Scheduled weekly (Sunday 00:00 UTC):
-  - [ ] Reads all losing signals from past week
-  - [ ] Identifies loss patterns (session, regime, strategy correlations)
-  - [ ] Proposes concrete code changes with reasoning
-  - [ ] Can be triggered on-demand via Claude Code CLI
+- [x] `.claude/agents/strategy-evolver.md` — Scheduled weekly (Sunday 00:00 UTC):
+  - [x] Reads all losing signals from past week
+  - [x] Identifies loss patterns (session, regime, strategy correlations)
+  - [x] Proposes concrete code changes with reasoning
+  - [x] Can be triggered on-demand via Claude Code CLI
 
-### 12.4 Verification
+### 12.4 Phase 13 Specialist Agents
+- [x] `.claude/agents/bollinger-band-strategist.md` — Implements 5th strategy (Bollinger Bands + ATR):
+  - [x] Dual-mode: mean-reversion (ranging) + breakout (squeeze)
+  - [x] Multi-timeframe validation (H4 bias, H1/M30 entry, M15 timing)
+  - [x] ATR-based dynamic SL/TP with gold-specific tuning
+  - [x] Confidence scoring with band precision, RSI confirmation, squeeze duration
+- [x] `.claude/agents/dynamic-stoploss-engineer.md` — Enhances risk manager with ATR-based stops:
+  - [x] ATR-based stop-loss calculator with volatility regime scaling
+  - [x] Session-aware adjustments (Asian/London/NY/overlap)
+  - [x] Position sizing using ATR stop distance instead of fixed pips
+  - [x] Backward-compatible config toggle (dynamic vs fixed mode)
+- [x] `.claude/agents/timeframe-analyzer.md` — Adds M30 timeframe + benchmarking:
+  - [x] M30 support across data pipeline, strategy runner, decision pipeline
+  - [x] Cross-timeframe benchmarking script (M15 vs M30 vs H1)
+  - [x] Timeframe weight recommendations for decision pipeline
+  - [x] Rate limit budget analysis for M30 addition
+
+### 12.5 Verification
 - [ ] Run each agent manually, verify output quality
 - [ ] Schedule agents via `/schedule`, confirm cron execution
 - [ ] Verify performance-reviewer catches intentional strategy degradation
 
 ---
 
-## Updated File Tree (Phase 9-12 additions)
+## Phase 13: Bollinger Bands Strategy, ATR Enhancements & 30m Timeframe
+
+Inspired by [DaviddTech's video](https://www.youtube.com/watch?v=zJf5B5haBjc) where Claude AI autonomously selected Bollinger Bands + ATR as optimal indicators for a scalping strategy. All parameters tuned for XAU/USD (gold) volatility profile. Full research notes in `YOUTUBE.md`.
+
+### 13.1 M30 Timeframe Support
+- [ ] `backend/database/models.py` — Add `M30 = "30m"` to Timeframe enum (between M15 and H1)
+- [ ] `backend/data/feed.py` — Add M30 feed mappings: TwelveData `"30min"`, OANDA `"M30"`
+- [ ] `backend/data/candle_ingestion.py` — Add M30 ingestion interval (check every 2 min)
+- [ ] `backend/strategies/runner.py` — Add `Timeframe.M30: 400` to CANDLE_LIMITS
+- [ ] `backend/brain/decision_pipeline.py` — Add M30 to timeframe iteration and system prompt
+- [ ] `backend/config.py` — Add `enable_m30_ingestion: bool = True` (configurable for API rate limits)
+- [ ] `frontend/lib/types.ts` — Add `"30m"` to Timeframe union type
+- [ ] `frontend/components/charts/live-chart.tsx` — Add M30 to TIMEFRAMES array
+- [ ] `backend/tests/conftest.py` — Add `candles_m30` fixture (300 bars, 30-min intervals, vol=8.0), update `all_candles`
+- [ ] Alembic migration — `ALTER TYPE timeframe ADD VALUE '30m'`
+
+### 13.2 Bollinger Bands Strategy (5th Strategy)
+- [ ] `backend/strategies/indicators.py` — Add `bollinger_bandwidth()` and `bollinger_pct_b()` helpers
+- [ ] `backend/strategies/bollinger_bands.py` — **NEW FILE**: `BollingerBandsStrategy` class:
+  - [ ] `name = "bollinger_bands"`, implements `TradingStrategy` protocol
+  - [ ] Dual-mode: **mean-reversion** (ranging markets, ADX < 25) + **breakout** (after Bollinger Squeeze)
+  - [ ] Timeframes: H4 (bias/ADX trend filter), M30 preferred entry (H1 fallback)
+  - [ ] Parameters: `bb_period=20`, `bb_std_dev=2.5` (wider for gold volatility), `squeeze_bandwidth=0.02`, `adx_trend_threshold=25.0`, `atr_period=14`, `sl_atr_mult=2.0` (gold consensus), `tp_atr_mult=4.0`, `volatility_gate_mult=2.0`
+  - [ ] Mean-reversion: LONG when %B <= 0 + RSI < 35, SHORT when %B >= 1 + RSI > 65. TP = middle band
+  - [ ] Breakout: Enter on band break after squeeze (bandwidth < threshold for 3+ of last 5 bars). TP = ATR-based
+  - [ ] Volatility gate: skip entries when ATR(2 bars) >= avg_ATR(20) * 2.0 (news spike filter)
+  - [ ] Confidence scoring: base 0.50 + RR bonus (+0.15), band precision (+0.10), RSI confirmation (+0.05), squeeze duration (+0.10), ATR expansion (+0.05)
+- [ ] `backend/strategies/__init__.py` — Register `BollingerBandsStrategy()` in `ALL_STRATEGIES` and `__all__`
+- [ ] `backend/optimisation/reoptimiser.py` — Add `"bollinger_bands"` search space: bb_period (10-50), bb_std_dev (1.5-3.0), squeeze_bandwidth (0.01-0.05), adx_trend_threshold (20-30), atr_period (7-21), sl_atr_mult (1.0-4.0), tp_atr_mult (1.5-6.0), volatility_gate_mult (1.5-3.0). Add `"bb_period"` to `INT_PARAMS`
+- [ ] `backend/brain/decision_pipeline.py` — Add `bollinger_bands` to strategy-regime mappings: RANGING → mean-reversion, VOLATILE → breakout
+- [ ] `backend/brain/session_filter.py` — Add `bollinger_bands` session weights: London/NY 0.8, London/NY overlap 0.9, Asian 0.5
+
+### 13.3 ATR-Based Dynamic Stop-Loss Enhancement
+- [ ] `backend/brain/risk_manager.py` — Add two methods to `RiskManager`:
+  - [ ] `calculate_dynamic_sl_tp(entry_price, direction, current_atr, sl_atr_mult=2.0, tp_atr_mult=4.0)` → `(stop_loss, take_profit)`
+  - [ ] `calculate_atr_position_size(account_equity, current_atr, sl_atr_mult=2.0, avg_atr_20=None)` → position size with volatility scaling
+- [ ] `backend/config.py` — Add `default_sl_atr_mult: float = 2.0`, `default_tp_atr_mult: float = 4.0`
+
+### 13.4 Timeframe Benchmarking
+- [ ] `backend/database/models.py` — Add `timeframe_entry: Mapped[str | None]` (nullable String(10)) to Signal model
+- [ ] `backend/strategies/runner.py` — Persist `timeframe_entry=candidate.timeframe_entry.value` when creating signals
+- [ ] `backend/brain/decision_pipeline.py` — Persist `timeframe_entry` when creating signals
+- [ ] `backend/optimisation/timeframe_benchmark.py` — **NEW FILE**: `run_timeframe_benchmark()` — compare strategy performance per entry timeframe
+- [ ] `backend/routers/performance.py` — Add `GET /api/performance/timeframe-benchmark` endpoint
+- [ ] `backend/strategies/confidence.py` — Add timeframe noise penalty: M15 → -0.05 confidence
+- [ ] Alembic migration — Add `timeframe_entry` nullable column to signals table
+
+### 13.5 Frontend: Bollinger Bands Chart Overlay
+- [ ] `backend/routers/indicators.py` — **NEW FILE**: `GET /api/indicators/bollinger` endpoint (computes BB from stored candles, returns upper/middle/lower/pct_b/bandwidth/squeeze_active/current_mode)
+- [ ] `frontend/lib/types.ts` — Add `BollingerData` and `BollingerIndicator` interfaces
+- [ ] `frontend/components/charts/bollinger-overlay.tsx` — **NEW FILE**: `useBollingerOverlay` hook
+  - [ ] 3 LineSeries on TradingView chart: upper/lower (gold-400 at 40% opacity, dashed), middle (muted gray, solid)
+  - [ ] Updates on new candles via WebSocket
+  - [ ] Togglable visibility
+- [ ] `frontend/components/charts/live-chart.tsx` — Add "BB" toggle button next to timeframe buttons, integrate `useBollingerOverlay` hook
+
+### 13.6 Frontend: Bollinger Dashboard Panel
+- [ ] `frontend/components/brain/bollinger-panel.tsx` — **NEW FILE**: Client component for brain dashboard
+  - [ ] Current mode badge (mean-reversion green / breakout gold / neutral muted)
+  - [ ] %B horizontal bar with color zones (bear when extreme, gold approaching, bull neutral)
+  - [ ] Bandwidth bar with squeeze warning
+  - [ ] Squeeze status indicator (pulsing gold dot when active)
+  - [ ] Current ATR with multiplier vs 20-period average
+  - [ ] Upper/Middle/Lower band prices (monospace, gold-400 accent)
+  - [ ] Most recent BB signal with direction, price, confidence
+- [ ] `frontend/app/brain/page.tsx` — Add `BollingerPanel` to right sidebar (below RiskPanel)
+- [ ] `frontend/lib/api.ts` — Add `getBollingerIndicator()` and `getLatestSignalByStrategy()` helpers
+
+### 13.7 TradingView MCP Integration (Optional)
+- [ ] `docker-compose.yml` — Add `tradingview-mcp` service (profile: "mcp", image: `atilaahmet/tradingview-mcp:latest`, port 8080)
+- [ ] `.mcp.json` — Add TradingView MCP server entry for Claude Code agent workflows
+- [ ] `CLAUDE.md` — Document TradingView MCP tools (bollinger_scan, multi_agent_analysis, rating_filter)
+
+### 13.8 Tests
+- [ ] `backend/tests/test_strategies/test_bollinger_bands.py` — **NEW FILE**: 12+ tests:
+  - [ ] `test_returns_empty_insufficient_data`
+  - [ ] `test_returns_empty_missing_timeframes`
+  - [ ] `test_mean_reversion_long_at_lower_band`
+  - [ ] `test_mean_reversion_short_at_upper_band`
+  - [ ] `test_no_mean_reversion_in_trending_market` (ADX > 25 suppresses)
+  - [ ] `test_breakout_long_after_squeeze`
+  - [ ] `test_breakout_short_after_squeeze`
+  - [ ] `test_volatility_gate_blocks_entry`
+  - [ ] `test_confidence_minimum_060`
+  - [ ] `test_prefers_m30_over_h1`
+  - [ ] `test_falls_back_to_h1_without_m30`
+  - [ ] `test_custom_parameters`
+- [ ] `backend/tests/test_brain/test_risk_manager.py` — Add ATR dynamic SL/TP tests:
+  - [ ] `test_dynamic_sl_long_below_entry`
+  - [ ] `test_dynamic_sl_short_above_entry`
+  - [ ] `test_high_atr_reduces_position_size`
+  - [ ] `test_zero_atr_returns_zero`
+  - [ ] `test_respects_one_percent_cap`
+
+### 13.9 Verification
+- [ ] `pytest tests/test_strategies/test_bollinger_bands.py -v` — all BB strategy tests pass
+- [ ] `pytest tests/test_brain/test_risk_manager.py -v` — all ATR SL/TP tests pass
+- [ ] `pytest` — full suite, no regressions
+- [ ] `cd frontend && npm run lint` — no lint errors
+- [ ] M30 candles appear in live chart timeframe selector
+- [ ] "BB" toggle on live chart renders 3 band lines (upper/middle/lower)
+- [ ] `/api/signals` returns signals with `strategy_name: "bollinger_bands"`
+- [ ] Brain dashboard strategy table includes BB strategy
+- [ ] BollingerPanel in brain sidebar shows %B, bandwidth, squeeze status, mode
+- [ ] `/api/indicators/bollinger?symbol=XAU/USD&timeframe=30m` returns valid JSON
+- [ ] `/api/params` returns BB optimization parameters after reoptimiser runs
+- [ ] `/api/performance/timeframe-benchmark` returns per-timeframe comparison data
+
+---
+
+## Updated File Tree (Phase 9-13 additions)
 
 ```
 backend/brain/
-├── ab_testing.py          # NEW: A/B testing framework
-├── market_regime.py       # NEW: Market regime classification
-├── session_filter.py      # NEW: Trading session awareness
-├── ensemble.py            # NEW: Multi-perspective ensemble
-├── market_intel.py        # NEW: CrawlForge news sentiment
-├── correlations.py        # NEW: Cross-asset correlation analysis
-├── claude_client.py       # MODIFIED: extended thinking support
-├── decision_pipeline.py   # MODIFIED: enriched context + ensemble routing
-└── risk_manager.py        # unchanged
+├── ab_testing.py          # NEW (Phase 9): A/B testing framework
+├── market_regime.py       # NEW (Phase 10): Market regime classification
+├── session_filter.py      # NEW (Phase 10): Trading session awareness
+├── ensemble.py            # NEW (Phase 10): Multi-perspective ensemble
+├── market_intel.py        # NEW (Phase 11): CrawlForge news sentiment
+├── correlations.py        # NEW (Phase 11): Cross-asset correlation analysis
+├── claude_client.py       # MODIFIED (Phase 10): extended thinking support
+├── decision_pipeline.py   # MODIFIED (Phase 10/13): enriched context + ensemble routing + M30 + BB regime mappings
+└── risk_manager.py        # MODIFIED (Phase 13): ATR dynamic SL/TP + position sizing methods
+
+backend/strategies/
+├── bollinger_bands.py     # NEW (Phase 13): Bollinger Bands dual-mode strategy
+├── indicators.py          # MODIFIED (Phase 13): bollinger_bandwidth() + bollinger_pct_b()
+├── confidence.py          # MODIFIED (Phase 13): timeframe noise penalty
+├── runner.py              # MODIFIED (Phase 13): M30 candle limits + timeframe_entry persistence
+└── __init__.py            # MODIFIED (Phase 13): register BollingerBandsStrategy
+
+backend/optimisation/
+├── timeframe_benchmark.py # NEW (Phase 13): M15 vs H1 performance comparison
+└── reoptimiser.py         # MODIFIED (Phase 13): bollinger_bands search space
 
 backend/routers/
-└── ab_tests.py            # NEW: A/B test results API
+├── ab_tests.py            # NEW (Phase 9): A/B test results API
+├── indicators.py          # NEW (Phase 13): BB indicator data endpoint
+└── performance.py         # MODIFIED (Phase 13): timeframe-benchmark endpoint
 
 backend/reports/           # NEW directory
 └── daily_review.md        # Auto-generated by performance-reviewer agent
 
+backend/tests/test_strategies/
+└── test_bollinger_bands.py  # NEW (Phase 13): 12+ BB strategy tests
+
 .claude/agents/
-├── trading-brain-researcher.md  # NEW
-├── performance-reviewer.md      # NEW
-└── strategy-evolver.md          # NEW
+├── project-coordinator.md          # Phase 1-8: Orchestration
+├── infra-database-architect.md     # Phase 1
+├── data-feed-engineer.md           # Phase 2
+├── trading-strategy-developer.md   # Phase 3
+├── brain-risk-engineer.md          # Phase 4
+├── optimisation-engineer.md        # Phase 5
+├── api-websocket-developer.md      # Phase 6
+├── frontend-dashboard-developer.md # Phase 7
+├── test-quality-engineer.md        # Phase 8
+├── trading-brain-researcher.md     # Phase 12: CrawlForge research + performance
+├── performance-reviewer.md         # Phase 12: Daily performance review
+├── strategy-evolver.md             # Phase 12: Weekly loss analysis
+├── bollinger-band-strategist.md    # NEW (Phase 13): BB + ATR strategy
+├── dynamic-stoploss-engineer.md    # NEW (Phase 13): ATR dynamic stop-loss
+└── timeframe-analyzer.md           # NEW (Phase 13): M30 + cross-TF benchmarking
 
 frontend/components/brain/
-└── ab-test-panel.tsx      # NEW: A/B test results display
+├── ab-test-panel.tsx      # NEW (Phase 9): A/B test results display
+└── bollinger-panel.tsx    # NEW (Phase 13): BB status panel (%B, bandwidth, squeeze, mode)
+
+frontend/components/charts/
+└── bollinger-overlay.tsx  # NEW (Phase 13): BB band line overlays for TradingView chart
 ```
 
 ---
@@ -673,6 +832,30 @@ frontend/components/brain/
 7. **Server-side vs client-side API fetching** — Server Components fetch directly from `localhost:8000`; client-side uses Next.js rewrite proxy
 8. **Lightweight Charts v5 API** — uses `chart.addSeries(CandlestickSeries, opts)` instead of deprecated v4 `chart.addCandlestickSeries(opts)`
 9. **Enum values_callable** — SQLAlchemy enum columns use `values_callable` to ensure `.value` (lowercase) is sent to PostgreSQL, not `.name` (uppercase)
+10. **AI-selected indicator research** — Bollinger Bands + ATR combination validated by independent AI selection ([DaviddTech video](YOUTUBE.md)), confirming mid-range timeframes (M30/H1) filter noise better than M15
+11. **ATR-based dynamic stops** — Supplement (not replace) fixed 1% risk cap; adapts to gold's session-dependent volatility
+
+---
+
+## Agent Team (15 agents)
+
+| Agent | Phase | Domain | Model |
+|---|---|---|---|
+| `project-coordinator` | All | Orchestration, integration review | Opus |
+| `infra-database-architect` | 1 | Docker, DB models, migrations, repos, schemas | Sonnet |
+| `data-feed-engineer` | 2 | Twelve Data + OANDA feeds, candle ingestion | Sonnet |
+| `trading-strategy-developer` | 3 | Indicators, 4 strategies, signal resolution | Sonnet |
+| `brain-risk-engineer` | 4 | Claude client, risk manager, decision pipeline | Sonnet |
+| `optimisation-engineer` | 5 | Monte Carlo, walk-forward, reoptimiser | Sonnet |
+| `api-websocket-developer` | 6 | REST routes, WebSocket, scheduler wiring | Sonnet |
+| `frontend-dashboard-developer` | 7 | Next.js dashboard, charts, components | Sonnet |
+| `test-quality-engineer` | 8 | Tests, error handling, logging | Sonnet |
+| `trading-brain-researcher` | 12 | CrawlForge research, performance analysis | Opus |
+| `performance-reviewer` | 12 | Daily performance review, degradation alerts | Sonnet |
+| `strategy-evolver` | 12 | Weekly loss analysis, strategy code proposals | Sonnet |
+| `bollinger-band-strategist` | 13 | 5th strategy: BB + ATR mean-reversion/breakout | Sonnet |
+| `dynamic-stoploss-engineer` | 13 | ATR-based dynamic stop-loss, session-aware sizing | Sonnet |
+| `timeframe-analyzer` | 13 | M30 timeframe support, cross-TF benchmarking | Sonnet |
 
 ---
 
@@ -690,6 +873,7 @@ frontend/components/brain/
 - Signal minimum confidence to display: 0.60 (60%)
 - Tailwind CSS v4.2.2: CSS-first @theme — do NOT generate tailwind.config.js
 - Next.js 16.2: Turbopack enabled, Server Components by default, `use client` only where required
+- ATR dynamic stop-loss multiplier floors: SL mult >= 0.5, TP mult >= 1.0 (safety-critical)
 
 ---
 
@@ -703,6 +887,8 @@ frontend/components/brain/
 | Signal resolution 5-min lag | Acceptable for gold ATR ($15-30); can tighten to 1 min if needed |
 | Cold start with no data | Graceful degradation: default params, equal weights, skip Claude ranking |
 | APScheduler in single worker | Extract to separate process if horizontal scaling needed later |
+| M30 ingestion exceeding rate limits | Budget analysis required; configurable via `enable_m30_ingestion` toggle |
+| ATR-based stops in extreme volatility | Hard floor on multipliers + fallback to fixed mode if ATR computation fails |
 
 ---
 
@@ -741,7 +927,7 @@ open http://localhost:8000/docs    # API documentation
 
 ---
 
-## Complete File Tree (~124 files)
+## Complete File Tree (~130 files)
 
 ```
 claudeStocks/
@@ -750,6 +936,7 @@ claudeStocks/
 ├── .env
 ├── PRD.md
 ├── CLAUDE.md
+├── YOUTUBE.md
 ├── backend/
 │   ├── pyproject.toml
 │   ├── Dockerfile
@@ -793,11 +980,13 @@ claudeStocks/
 │   │   ├── __init__.py
 │   │   ├── base.py
 │   │   ├── indicators.py
+│   │   ├── confidence.py
 │   │   ├── runner.py
 │   │   ├── liquidity_sweep.py
 │   │   ├── trend_continuation.py
 │   │   ├── breakout_expansion.py
-│   │   └── ema_momentum.py
+│   │   ├── ema_momentum.py
+│   │   └── bollinger_bands.py         # Phase 13
 │   ├── brain/
 │   │   ├── __init__.py
 │   │   ├── claude_client.py
@@ -807,7 +996,8 @@ claudeStocks/
 │   │   ├── __init__.py
 │   │   ├── monte_carlo.py
 │   │   ├── walk_forward.py
-│   │   └── reoptimiser.py
+│   │   ├── reoptimiser.py
+│   │   └── timeframe_benchmark.py     # Phase 13
 │   ├── scheduler/
 │   │   ├── __init__.py
 │   │   ├── jobs.py
@@ -820,6 +1010,7 @@ claudeStocks/
 │   │   ├── risk.py
 │   │   ├── decisions.py
 │   │   ├── health.py
+│   │   ├── indicators.py              # Phase 13
 │   │   └── websocket.py
 │   ├── migrations/
 │   │   ├── __init__.py
@@ -836,7 +1027,8 @@ claudeStocks/
 │       │   ├── test_liquidity_sweep.py
 │       │   ├── test_trend_continuation.py
 │       │   ├── test_breakout_expansion.py
-│       │   └── test_ema_momentum.py
+│       │   ├── test_ema_momentum.py
+│       │   └── test_bollinger_bands.py # Phase 13
 │       ├── test_brain/
 │       │   ├── __init__.py
 │       │   ├── test_risk_manager.py
@@ -874,7 +1066,8 @@ claudeStocks/
     │   │   ├── live-chart.tsx
     │   │   ├── mini-chart.tsx
     │   │   ├── pnl-chart.tsx
-    │   │   └── timeframe-panel.tsx
+    │   │   ├── timeframe-panel.tsx
+    │   │   └── bollinger-overlay.tsx   # Phase 13
     │   ├── signals/
     │   │   ├── signal-card.tsx
     │   │   └── signal-feed.tsx
@@ -883,7 +1076,8 @@ claudeStocks/
     │   │   ├── risk-panel.tsx
     │   │   ├── decision-log.tsx
     │   │   ├── backtest-table.tsx
-    │   │   └── params-viewer.tsx
+    │   │   ├── params-viewer.tsx
+    │   │   └── bollinger-panel.tsx     # Phase 13
     │   ├── health/
     │   │   └── health-card.tsx
     │   ├── layout/
